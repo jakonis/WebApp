@@ -1,0 +1,17 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+div.bannertop{
+    width: 100%;
+    height: 400px !important;
+}
+
+img {
+    height: inherit;
+    width: inherit;
+}
+
+a {
+  color: #00B7FF;
+}
