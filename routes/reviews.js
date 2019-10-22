@@ -1,10 +1,33 @@
-let reviews = require('../models/reviews');
 let express = require('express');
 let router = express.Router();
+let mongoose = require('mongoose');
+
+let Review = require('../models/reviews');
+
+let mongouri="mongodb+srv://Alaniskis:@reviewscluster-ybatl.mongodb.net/reviewsdb?retryWrites=true&w=majority";
+
+mongoose.connect(mongouri);
+
+let db = mongoose.connection;
+
+db.on('error', function (err) {
+    console.log('Unable to Connect to [ ' + db.name + ' ]', err);
+});
+
+db.once('open', function () {
+    console.log('Successfully Connected to [ ' + db.name + ' ]');
+});
 
 router.findAll = (req, res) => {
+    // Return a JSON representation of our list
     res.setHeader('Content-Type', 'application/json');
-    res.send(JSON.stringify(reviews,null,5));
+
+    Review.find(function(err, reviews) {
+        if (err)
+            res.send(err);
+
+        res.send(JSON.stringify(reviews,null,5));
+    });
 }
 
 function getByValue(array, id) {
@@ -13,15 +36,15 @@ function getByValue(array, id) {
 }
 
 router.findOne = (req, res) => {
- var review = getByValue(reviews,req.params.id);
-    res.setHeader('Content-Type', 'application/json');
-    if (review != null){
-        res.send(JSON.stringify(review,null,5));
-    }
-else {
-    res.send("Review not Found")
-    }
 
+    res.setHeader('Content-Type', 'application/json');
+
+    Review.find({ "_id" : req.params.id },function(err, review) {
+        if (err)
+            res.json({ message: 'Review NOT Found!', errmsg : err } );
+        else
+            res.send(JSON.stringify(review,null,5));
+    });
 }
 function getTotalVotes(array) {
     let totalVotes = 0;
@@ -30,49 +53,57 @@ function getTotalVotes(array) {
 }
 
 router.addReview = (req, res) => {
-    //Add a new review to our list
-    var id = Math.floor((Math.random() * 1000000) + 1); //Randomly generate an id
-    var currentSize = reviews.length;
 
-    reviews.push({"id" : id, "review" : req.body.review,"upvotes" : 0});
+    res.setHeader('Content-Type', 'application/json');
 
-    if((currentSize + 1) == reviews.length)
-        res.json({ message: 'Review Added Successfully!'});
-    else
-        res.json({ message: 'Review NOT Added!'});
+    var review = new Review();
+
+    review.review = req.body.review;
+
+
+    review.save(function(err) {
+        if (err)
+            res.json({ message: 'Teview NOT Added!', errmsg : err } );
+        else
+            res.json({ message: 'Review Successfully Added!', data: review });
+    });
 }
 
 router.incrementUpvotes = (req, res) => {
-    // Find the relevant review based on params id passed in
-    // Add 1 to upvotes property of the selected review based on its id
-    var review = getByValue(reviews,req.params.id);
 
-    if (review != null) {
-        review.upvotes += 1;
-        res.json({status : 200, message : 'UpVote Successful' , review : review });
-    }
-    else
-        res.send('Review NOT Found - UpVote NOT Successful!!');
+    Review.findById(req.params.id, function(err,review) {
+        if (err)
+            res.json({ message: 'Review NOT Found!', errmsg : err } );
+        else {
+            review.upvotes += 1;
+            review.save(function (err) {
+                if (err)
+                    res.json({ message: 'Review NOT UpVoted!', errmsg : err } );
+                else
+                    res.json({ message: 'Review Successfully Upvoted!', data: review });
+            });
+        }
+    });
 }
 
 router.deleteReview = (req, res) => {
-    //Delete the selected review based on its id
-    var review = getByValue(reviews,req.params.id);
-    var index = reviews.indexOf(review);
 
-    var currentSize = reviews.length;
-    reviews.splice(index, 1);
-
-    if((currentSize - 1) == reviews.length)
-        res.json({ message: 'Review Deleted!'});
-    else
-        res.json({ message: 'Review NOT Deleted!'});
+    Review.findByIdAndRemove(req.params.id, function(err) {
+        if (err)
+            res.json({ message: 'Review NOT DELETED!', errmsg : err } );
+        else
+            res.json({ message: 'Review Successfully Deleted!'});
+    });
 }
 
 router.findTotalVotes = (req, res) => {
 
-    let votes = getTotalVotes(reviews);
-    res.json({totalvotes : votes});
+    Review.find(function(err, reviews) {
+        if (err)
+            res.send(err);
+        else
+            res.json({ totalvotes : getTotalVotes(reviews) });
+    });
 }
 
 
