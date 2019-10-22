@@ -4,7 +4,7 @@ let mongoose = require('mongoose');
 
 let Review = require('../models/reviews');
 
-let mongouri="mongodb+srv://Alaniskis:@reviewscluster-ybatl.mongodb.net/reviewsdb?retryWrites=true&w=majority";
+let mongouri="mongodb+srv://Alaniskis:@reviewscluster-ybatl.mongodb.net/reviewsdb?retryWrites=true&w=majority"; 
 
 mongoose.connect(mongouri);
 
